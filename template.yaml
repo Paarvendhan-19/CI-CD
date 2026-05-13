@@ -1,12 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Automated deployment of Web Tier (EC2) and App Tier (RDS)'
 
+Parameters:
+  # This automatically fetches the latest Amazon Linux 2023 AMI ID for your region
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Default: 'Password123'
+
 Resources:
   # Web Tier: EC2 Instance
   WebInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
-      ImageId: ami-0abcdef1234567890 
+      ImageId: !Ref LatestAmiId
       InstanceType: t2.micro
 
   # Database Tier: RDS Instance
@@ -16,4 +26,5 @@ Resources:
       DBInstanceClass: db.t3.micro
       Engine: mysql
       MasterUsername: admin
-      MasterUserPassword: Password123
+      MasterUserPassword: !Ref DBPassword
+      AllocatedStorage: '20'
