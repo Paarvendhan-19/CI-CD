@@ -48,11 +48,12 @@ Resources:
           # Install dependencies and start the Node.js application
           cd /home/ec2-user/app
           npm install
+          
           # Runs the app on port 80 as defined in the Security Group
-          sudo PORT=80 node app.js &
+          sudo PORT=80 node server.js &
 
   # 3. DATABASE TIER: RDS MySQL Instance
-  # Provisions the backend relational database [cite: 192-198]
+  # Provisions the backend relational database
   AppDatabase:
     Type: 'AWS::RDS::DBInstance'
     Properties:
