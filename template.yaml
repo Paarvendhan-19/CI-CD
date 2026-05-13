@@ -39,28 +39,24 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # MAGIC LINE: Forces all script output to the EC2 System Log
-          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-          
-          echo "--- STARTING DEPLOYMENT ---"
-          
-          cd /home/ec2-user
-          echo "1. Installing Node and Git..."
+          # 1. Update OS and install Git & Node.js
           dnf update -y
           dnf install -y nodejs git
           
-          echo "2. Cloning Repository..."
-          git clone https://github.com/Paarvendhan-19/CI-CD.git app
+          # 2. Clone the repository
+          git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app
+          cd /home/ec2-user/app
           
-          echo "3. Installing NPM Packages..."
-          cd app
+          # 3. Brute-force fix any leftover Windows line endings in the file
+          sed -i 's/\r$//' server.js
+          
+          # 4. Install standard packages AND explicitly install Express
           npm install
+          npm install express
           
-          echo "4. Starting Node Server..."
+          # 5. Start the application on Port 80 in the background
           export PORT=80
           nohup node server.js > /var/log/nodeapp.log 2>&1 &
-          
-          echo "--- DEPLOYMENT COMPLETE ---"
 
   # 3. DATABASE TIER: RDS MySQL Instance
   # Provisions the backend relational database
