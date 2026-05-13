@@ -39,20 +39,28 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # Update OS and install required packages
+          # MAGIC LINE: Forces all script output to the EC2 System Log
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          
+          echo "--- STARTING DEPLOYMENT ---"
+          
+          cd /home/ec2-user
+          echo "1. Installing Node and Git..."
           dnf update -y
           dnf install -y nodejs git
           
-          # Clone your public CI-CD repository
-          git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app
+          echo "2. Cloning Repository..."
+          git clone https://github.com/Paarvendhan-19/CI-CD.git app
           
-          # Navigate into the folder and install NPM packages
-          cd /home/ec2-user/app
+          echo "3. Installing NPM Packages..."
+          cd app
           npm install
           
-          # Set the port to 80 and start the app in the background (nohup prevents it from dying)
+          echo "4. Starting Node Server..."
           export PORT=80
           nohup node server.js > /var/log/nodeapp.log 2>&1 &
+          
+          echo "--- DEPLOYMENT COMPLETE ---"
 
   # 3. DATABASE TIER: RDS MySQL Instance
   # Provisions the backend relational database
