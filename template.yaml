@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Experiment 3: Automated Multi-Tier Deployment (Web, App, and Database Tiers)'
 
 Parameters:
-  # Automatically fetches the latest Amazon Linux 2023 AMI ID for your specific region
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
@@ -14,8 +13,6 @@ Parameters:
     Default: 'Password123'
 
 Resources:
-  # 1. WEB TIER: Security Group (Virtual Firewall)
-  # Opens Port 80 so the web application is accessible via the browser
   WebServerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -26,8 +23,6 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  # 2. WEB & APP TIER: EC2 Instance
-  # Provisions the server for the web and application tiers 
   WebInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -35,31 +30,21 @@ Resources:
       InstanceType: t2.micro
       SecurityGroups:
         - !Ref WebServerSecurityGroup
-      # USER DATA: Automates software installation and app startup
+      # USER DATA: Array format guarantees pure Linux line endings!
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          # 1. Update OS and install Git & Node.js
-          dnf update -y
-          dnf install -y nodejs git
-          
-          # 2. Clone the repository
-          git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app
-          cd /home/ec2-user/app
-          
-          # 3. Brute-force fix any leftover Windows line endings in the file
-          sed -i 's/\r$//' server.js
-          
-          # 4. Install standard packages AND explicitly install Express
-          npm install
-          npm install express
-          
-          # 5. Start the application on Port 80 in the background
-          export PORT=80
-          nohup node server.js > /var/log/nodeapp.log 2>&1 &
+        Fn::Base64:
+          !Join
+            - "\n"
+            - - "#!/bin/bash"
+              - "dnf update -y"
+              - "dnf install -y nodejs git"
+              - "git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app"
+              - "cd /home/ec2-user/app"
+              - "npm install"
+              - "npm install express"
+              - "export PORT=80"
+              - "nohup node server.js > /var/log/nodeapp.log 2>&1 &"
 
-  # 3. DATABASE TIER: RDS MySQL Instance
-  # Provisions the backend relational database
   AppDatabase:
     Type: 'AWS::RDS::DBInstance'
     Properties:
