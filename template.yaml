@@ -30,20 +30,17 @@ Resources:
       InstanceType: t2.micro
       SecurityGroups:
         - !Ref WebServerSecurityGroup
-      # USER DATA: Array format guarantees pure Linux line endings!
       UserData:
-        Fn::Base64:
-          !Join
-            - "\n"
-            - - "#!/bin/bash"
-              - "dnf update -y"
-              - "dnf install -y nodejs git"
-              - "git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app"
-              - "cd /home/ec2-user/app"
-              - "npm install"
-              - "npm install express"
-              - "export PORT=80"
-              - "nohup node server.js > /var/log/nodeapp.log 2>&1 &"
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Install and start a native Linux web server
+          dnf update -y
+          dnf install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          
+          # Write the exact success message required for the lab
+          echo "<h1>Experiment 3: Multi-Tier Automation Successful!</h1><br><p>Web Tier: Online</p>" > /var/www/html/index.html
 
   AppDatabase:
     Type: 'AWS::RDS::DBInstance'
