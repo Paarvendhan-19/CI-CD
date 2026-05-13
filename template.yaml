@@ -1,1 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Automated deployment of Web Tier (EC2) and App Tier (RDS)'
 
+Resources:
+  # Web Tier: EC2 Instance
+  WebInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0abcdef1234567890 
+      InstanceType: t2.micro
+
+  # Database Tier: RDS Instance
+  AppDatabase:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: admin
+      MasterUserPassword: Password123
