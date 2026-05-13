@@ -39,18 +39,20 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          sudo dnf update -y
-          sudo dnf install -y nodejs git
+          # Update OS and install required packages
+          dnf update -y
+          dnf install -y nodejs git
           
-          # Clone your CI-CD repository
+          # Clone your public CI-CD repository
           git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app
           
-          # Install dependencies and start the Node.js application
+          # Navigate into the folder and install NPM packages
           cd /home/ec2-user/app
           npm install
           
-          # Runs the app on port 80 as defined in the Security Group
-          sudo PORT=80 node server.js &
+          # Set the port to 80 and start the app in the background (nohup prevents it from dying)
+          export PORT=80
+          nohup node server.js > /var/log/nodeapp.log 2>&1 &
 
   # 3. DATABASE TIER: RDS MySQL Instance
   # Provisions the backend relational database
