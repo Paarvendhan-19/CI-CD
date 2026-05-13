@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
+// Uses the port provided by AWS, or defaults to 3000 for local testing
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse URL-encoded bodies (as sent by HTML forms)
