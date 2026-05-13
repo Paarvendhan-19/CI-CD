@@ -1,42 +1,58 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Full Automated Multi-Tier Deployment for Lab 3'
+Description: 'Experiment 3: Automated Multi-Tier Deployment (Web, App, and Database Tiers)'
+
+Parameters:
+  # Automatically fetches the latest Amazon Linux 2023 AMI ID for your specific region
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+  
+  DBPassword:
+    Type: String
+    Description: 'Password for the RDS MySQL database'
+    NoEcho: true
+    Default: 'Password123'
 
 Resources:
-  # 1. Firewall: Opens Port 80 for the Web Tier
+  # 1. WEB TIER: Security Group (Virtual Firewall)
+  # Opens Port 80 so the web application is accessible via the browser
   WebServerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: 'Allow HTTP traffic'
+      GroupDescription: 'Enable HTTP access via port 80'
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  # 2. Web Tier: EC2 Instance with Auto-Start Script
+  # 2. WEB & APP TIER: EC2 Instance
+  # Provisions the server for the web and application tiers 
   WebInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
-      # Automatically gets the latest Amazon Linux 2023 AMI
-      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
+      ImageId: !Ref LatestAmiId
       InstanceType: t2.micro
       SecurityGroups:
         - !Ref WebServerSecurityGroup
-      # This script runs automatically so you DON'T have to connect via SSH
-      UserData: 
-        Fn::Base64: |
+      # USER DATA: Automates software installation and app startup
+      UserData:
+        Fn::Base64: !Sub |
           #!/bin/bash
           sudo dnf update -y
-          sudo dnf install -y nodejs
-          # Create a simple app directly on the server to verify the Web Tier
-          echo "const http = require('http');
-          http.createServer((req, res) => {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<h1>Experiment 3: Multi-Tier Automation Successful!</h1><p>Web Tier: Online</p>');
-          }).listen(80);" > app.js
-          sudo node app.js &
+          sudo dnf install -y nodejs git
+          
+          # Clone your CI-CD repository
+          git clone https://github.com/Paarvendhan-19/CI-CD.git /home/ec2-user/app
+          
+          # Install dependencies and start the Node.js application
+          cd /home/ec2-user/app
+          npm install
+          # Runs the app on port 80 as defined in the Security Group
+          sudo PORT=80 node app.js &
 
-  # 3. Database Tier: RDS Instance
+  # 3. DATABASE TIER: RDS MySQL Instance
+  # Provisions the backend relational database [cite: 192-198]
   AppDatabase:
     Type: 'AWS::RDS::DBInstance'
     Properties:
@@ -44,5 +60,10 @@ Resources:
       DBInstanceClass: db.t3.micro
       Engine: mysql
       MasterUsername: admin
-      MasterUserPassword: Password123
+      MasterUserPassword: !Ref DBPassword
       PubliclyAccessible: true
+
+Outputs:
+  WebsiteURL:
+    Description: 'URL of the deployed multi-tier application'
+    Value: !Sub 'http://${WebInstance.PublicIp}'
