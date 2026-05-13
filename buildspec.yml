@@ -1,0 +1,9 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - echo "Validating CloudFormation template..."
+      - aws cloudformation validate-template --template-body file://template.yaml
+artifacts:
+  files:
+    - template.yaml
