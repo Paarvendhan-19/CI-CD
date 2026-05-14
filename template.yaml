@@ -1,58 +1,30 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Experiment 3: Automated Multi-Tier Deployment (Web, App, and Database Tiers)'
+Description: 'Automated deployment of Web Tier (EC2) and App Tier (RDS)'
 
 Parameters:
+  # This automatically fetches the latest Amazon Linux 2023 AMI ID for your region
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
-  
   DBPassword:
     Type: String
-    Description: 'Password for the RDS MySQL database'
     NoEcho: true
     Default: 'Password123'
 
 Resources:
-  WebServerSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: 'Enable HTTP access via port 80'
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-
+  # Web Tier: EC2 Instance
   WebInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       ImageId: !Ref LatestAmiId
       InstanceType: t2.micro
-      SecurityGroups:
-        - !Ref WebServerSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          # Install and start a native Linux web server
-          dnf update -y
-          dnf install -y httpd
-          systemctl start httpd
-          systemctl enable httpd
-          
-          # Write the exact success message required for the lab
-          echo "<h1>Experiment 3: Multi-Tier Automation Successful!</h1><br><p>Web Tier: Online</p>" > /var/www/html/index.html
 
+  # Database Tier: RDS Instance
   AppDatabase:
     Type: 'AWS::RDS::DBInstance'
     Properties:
-      AllocatedStorage: '20'
       DBInstanceClass: db.t3.micro
       Engine: mysql
       MasterUsername: admin
       MasterUserPassword: !Ref DBPassword
-      PubliclyAccessible: true
-
-Outputs:
-  WebsiteURL:
-    Description: 'URL of the deployed multi-tier application'
-    Value: !Sub 'http://${WebInstance.PublicIp}'
+      AllocatedStorage: '20'
